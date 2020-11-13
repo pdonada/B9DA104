@@ -39,11 +39,39 @@ print(data_sub.shape)
 data_sub.info() #count non-null values in the columns
 data_sub.isnull().sum(axis=0) #count blanks in the columns
 
+# correlations
 data_sub.corr()
 
+# skew
 data_sub.skew()
 
+# histogram
 hist = data_sub.hist(bins=20)
+
+# box plot
+box = data_sub.plot(kind='box', subplots=True, layout=(4,3),sharex=False,sharey=False)
+box1= data_sub.plot(kind='box', subplots=False, layout=(4,3), sharex=False, sharey=False)
+
+# density plot
+dens = data_sub.plot(kind='density', subplots=True, layout=(4,3), sharex=False, sharey=False)
+
+# plot
+# correlation heat map
+corr = data_sub.corr()
+sns.heatmap(corr, 
+            xticklabels=corr.columns.values,
+            yticklabels = corr.columns.values)
+
+# pandas scatter_matrix
+ocor_a = pd.plotting.scatter_matrix(data_sub, alpha = 0.2)
+for i in ocor_a.flatten():
+    i.xaxis.label.set_rotation(90)
+    i.yaxis.label.set_rotation(0)
+    i.yaxis.label.set_ha('right')
+
+plt.tight_layout()
+plt.gcf().subplots_adjust(wspace=0, hspace=0)
+plt.show()
 
 
 
