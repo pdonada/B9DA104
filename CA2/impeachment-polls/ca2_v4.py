@@ -3,8 +3,13 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import MinMaxScaler
 import seaborn as sns; sns.set(style="ticks", color_codes=True)
 import os
+from sklearn.experimental import enable_iterative_imputer
+from sklearn.impute import IterativeImputer
+from sklearn.preprocessing import Imputer
+
 
 # set directory
 os.getcwd()
@@ -25,11 +30,13 @@ data_set.info() #count non-null values in the columns
 data_set.isnull().sum(axis=0) #count blanks in the columns
 
 # subset with necessary columns only
-data_sub = data_set.drop(['Start','End','SampleSize','Category','Include?','Pollster','Sponsor','Pop','tracking','Text','URL','Notes'], axis = 1)
+#data_sub = data_set.drop(['Start','End','SampleSize','Category','Include?','Pollster','Sponsor','Pop','tracking','Text','URL','Notes'], axis = 1)
+data_sub = data_set[['Yes','No','Unsure','Ind Sample']]
+data_sub = data_sub.rename(columns={'Ind Sample':'IndSample'})
 
-
-# update column 'Unsure' for zeros when blank
-data_sub.Unsure.fillna(value = 0, inplace = True)
+# imput values for NaN
+data_sub.Unsure.fillna(value = 0, inplace = True) #here by zero as it just occurs when there was no real value
+data_sub.IndSample.fillna(data_sub.IndSample.mean(), inplace = True) #here by mean as there should be always value for reference
 
 # inspect data
 data_sub.head()
@@ -69,67 +76,45 @@ for i in ocor_a.flatten():
     i.yaxis.label.set_rotation(0)
     i.yaxis.label.set_ha('right')
 
-plt.tight_layout()
-plt.gcf().subplots_adjust(wspace=0, hspace=0)
-plt.show()
 
+# rescaling
+array=data_sub.values
+x=array[:,:]
+scale=MinMaxScaler(feature_range=(0,2))
+rescaled_data=scale.fit_transform(x)
+np.set_printoptions(precision=2)
+print(rescaled_data[0:5,:])
 
+# linear regression
+# use only one feature
+x_data = data_sub.No
 
+# split the data into training/testing sets
+x_data_train = x[:-20]
+x_data_test = x[-20:]
 
-data_set = data_set.dropna(subset=['YEAR'])
-data_set = data_set.dropna(subset=['FEMALE_CHARACTERS'])
-data_set = data_set.dropna(subset=['MALE_CHARACTERS'])
-
-
-# change columns object type
-data_set['Category'] = data_set['Category'].astype(str)
-
-# creating columns for rate
-data_set['FEMALE_RATE'] = round((data_set['FEMALE_CHARACTERS'] / data_set['TOTAL']).astype(float),3)
-
-# ploting data for evaluation
-sns.pairplot(data_set, hue = None, diag_kind = 'kde',
-             plot_kws = {'alpha': 0.6, 's': 80, 'edgecolor': 'k'},
-             size = 3)
-plt.suptitle('Character sex by Year', 
-             size = 20)
-
-sns.pairplot(
-    data_set,
-    x_vars=["MALE_CHARACTERS", "FEMALE_CHARACTERS",'FEMALE_RATE'],
-    y_vars=["YEAR"],
-)
-
-
-# Checking for Linearity
-plt.scatter(data_set['FEMALE_RATE'], data_set['YEAR'], color='red')
-plt.title('Female Rate X Year', fontsize=14)
-plt.xlabel('Female Rate', fontsize=14)
-plt.ylabel('Year', fontsize=14)
-plt.grid(True)
-plt.show()
-
-# converts data into numpy array
-x = data_set.iloc[:, 0].values.reshape(-1, 1) #select all rows, columns year, appearances, align_b
-y = data_set.iloc[:, 4].values.reshape(-1, 1)
-
-# Split the data into training/testing sets
-ds_sub_x_train = x[:-20]
-ds_sub_x_test = x[-20:]
-
-# Split the targets into training/testing sets
-ds_sub_y_train = y[:-20]
-ds_sub_y_test = y[-20:]
+# split the targets into training/testing sets
+y_data_train = data_sub.No[:-20]
+y_data_test = data_sub.No[-20:]
 
 # create linear regression object
 lin_regres = LinearRegression()
 
-#Train the model using the training sets
-lin_regres.fit(ds_sub_x_train, ds_sub_y_train)
+# train the model using the training sets
+lin_regres.fit(x_data_train, y_data_train)
 
-#Make predictions using the testing set
-y_pred = lin_regres.predict(ds_sub_x_test)
-    
+# make predictions using the testing set
+y_data_pred = lin_regres.predict(x_data_test)
+print(y_data_pred)
 
-#Plot outputs
+# The coefficients
+print('Coefficients: \n', regr.coef_)
+# The mean squared error
+print("Mean squared error: %.2f"
+      % mean_squared_error(diabetes_y_test, diabetes_y_pred))
+# Explained variance score: 1 is perfect prediction
+print('Variance score: %.2f' % r2_score(diabetes_y_test, diabetes_y_pred))
+
+
+
  
