@@ -245,34 +245,7 @@ plt.ylabel('Yes', fontsize=14)
 plt.grid(True)
 plt.show()
 
-# defining cost 
-def cost_function(X, Y, B):
-    m = len(Y)
-    J = np.sum((X.dot(B) - Y) ** 2)/(2 * m)
-    return J
-
-
-def batch_gradient_descent(X, Y, B, alpha, iterations):
-    cost_history = [0] * iterations
-    m = len(Y)
- 
-    for iteration in range(iterations):
-        #print(iteration)
-        # Hypothesis Values
-        h = X.dot(B)
-        # Difference b/w Hypothesis and Actual Y
-        loss = h - Y
-        # Gradient Calculation
-        gradient = X.T.dot(loss) / m
-        # Changing Values of B using Gradient
-        B = B - alpha * gradient
-        # New Cost Value
-        cost = cost_function(X, Y, B)
-        cost_history[iteration] = cost
-    return B, cost_history
-
 # spliting database
-
 k2 = int(len(df['Yes']) * 0.2) # 20% samples
 k8 = int(len(df['Yes']) * -0.8) # 80% samples
 
@@ -284,78 +257,25 @@ x_test = x[:k2] #20%
 x_test = np.c_[np.ones(len(x_test),dtype='int64'),x_test]
 y_test = y[:k2]
 
-# fiting LR model.  
-model = LinearRegression()
-model.fit(x_train, y_train)    
- 
-# initialize coefficients
-B = np.zeros(x_train.shape[1])
-
-alpha = 0.05
-iter_ = 2000
-
-newB, cost_history = batch_gradient_descent(x_train, y_train, B, alpha, iter_)
-
-# creating MLR object
-model_mlr = linear_model.LinearRegression()
-
-# fiting LR model
-model_mlr.fit(x, y)
-print('Linear regression predictions: ', model_lr.predict(x_test_lr)[0])
-print('Intercept: \n', model_mlr.intercept_)
-print('Coefficients: \n', model_mlr.coef_)
-
-
-# creating objects to house predictions and real values
-y_pred = []
-y_true = []
-
-
-# using k-fold validation for the model using 10 folds.
-kf = KFold(n_splits=10, random_state = 42)
-for train_index, test_index in kf.split(df_filter):
-    df_test = df_filter.iloc[test_index]
-    df_train = df_filter.iloc[train_index]
-# defining input and output.    
-    x_train = np.array(df_train['Yes']).reshape(-1,1)
-    y_train = np.array(df_train['DemYes']).reshape(-1,1)
-    x_test = np.array(df_test['Yes']).reshape(-1,1)
-    y_test = np.array(df_test['DemYes']).reshape(-1,1)
-# fiting LR model.  
-    model = LinearRegression()
-    model.fit(x_train, y_train)
-# generating/appending prediction values to the objects created before    
-    y_pred.append(model.predict(x_test)[0])
-    y_true.append(y_test[0])  
-
-# checking performance of model with mean square error
-print(len(y_pred))
-print(len(y_true))
-print('Mean Square Error: ', mean_squared_error(y_true, y_pred))
-
-# creating list with NaN values on RepYes to be used in the model
-df_missing = data_sub[data_sub['DemYes'].isnull()].copy()   
-
-# predicting NaN values on RepYes with the model for NaN values
-x_test_lr = np.array(df_missing['Yes']).reshape(-1,1)
-
-x_train_lr = np.array(df_filter['Yes']).reshape(-1,1)
-y_train_lr = np.array(df_filter['DemYes']).reshape(-1,1)
-
 # creating LR object
-model_lr = LinearRegression()
+model_mr = LinearRegression()
 
 # fiting LR model
-model_lr.fit(x_train_lr, y_train_lr)
-print('Linear regression predictions: ', model_lr.predict(x_test_lr)[0])
+model_mr.fit(x_train, y_train)
+print('multi linear regression predictions: ', model_mr.predict(x_test)[0])
+
 
 # store prediction result in a variable
-pred = model_lr.predict(x_test_lr)
+pred = model_mr.predict(x_test)
+print(len(pred))
 print(pred)
 
-# crating variable with RepYes values to imput predicted values in NaN psitions
-repyes_vals = data_sub['DemYes'].values
-print(repyes_vals)
+# crating variable to store Yes predictions
+yes_vals = data_sub['Yes'].values
+print(yes_vals)
+
+
+
 
 # loop to imput values on RepYes NaN with predicted values
 i_value = 0
