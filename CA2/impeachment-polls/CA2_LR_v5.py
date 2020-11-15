@@ -1,14 +1,19 @@
+import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.linear_model import LinearRegression
-from sklearn import linear_model
 import seaborn as sns; sns.set(style="ticks", color_codes=True)
-import os
+
+from sklearn import linear_model
+from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import KFold
 from sklearn.metrics import mean_squared_error, r2_score
-pip list #Pandas 0.24.2 has an issue with fit_scores() method
-pip install pandas==0.23.4
+
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+
+#pip list #Pandas 0.24.2 has an issue with fit_scores() method
+#pip install pandas==0.23.4
 
 
 
@@ -142,7 +147,7 @@ for i in range(len(repyes_vals)):
         i_value += 1
 
 # copiando values from variable to RepYes column
-data_sub['RepYes'] = repyes_vals           
+data_sub['RepYes'] = repyes_vals
 
 # plot outputs
 plt.scatter(x_test, y_test,  color='black')
@@ -256,6 +261,7 @@ y_train = y[k8:]
 x_test = x[:k2] #20%
 x_test = np.c_[np.ones(len(x_test),dtype='int64'),x_test]
 y_test = y[:k2]
+y_test = y_test.round(0)
 
 # creating LR object
 model_mr = LinearRegression()
@@ -267,27 +273,26 @@ print('multi linear regression predictions: ', model_mr.predict(x_test)[0])
 
 # store prediction result in a variable
 pred = model_mr.predict(x_test)
-print(len(pred))
-print(pred)
+pred = pred.round(0)
 
-# crating variable to store Yes predictions
-yes_vals = data_sub['Yes'].values
-print(yes_vals)
+# verifying accuracy
+# coefficients
+print('Coefficients: \n', model_mr.coef_)
+# mean squared error
+print("Mean squared error: %.2f" % mean_squared_error(y_test, pred))
+# variance score: 1 is perfect prediction
+print('Variance score: %.2f' % r2_score(y_test, pred))
 
 
+# prepare model data point for visualization
+pred_f = pred.flatten()
+pred_df = pd.DataFrame({'Predict_Yes':pred_f})
 
+dfk = pd.concat([y_test, pred_df], axis=1)
 
-# loop to imput values on RepYes NaN with predicted values
-i_value = 0
-for i in range(len(repyes_vals)):
-    if np.isnan(repyes_vals[i]):
-        repyes_vals[i] = pred[i_value]
-        i_value += 1
-
-# copiando values from variable to RepYes column
-data_sub['DemYes'] = repyes_vals           
+error = dfk['Yes'] - dfk['Predict_Yes']
 
 # plot outputs
-plt.scatter(x_test, y_test,  color='black')
-plt.plot(x_test, pred, color='blue', linewidth=3)
+
+  
 
