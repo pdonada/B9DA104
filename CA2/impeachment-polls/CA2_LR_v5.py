@@ -7,6 +7,10 @@ import seaborn as sns; sns.set(style="ticks", color_codes=True)
 import os
 from sklearn.model_selection import KFold
 from sklearn.metrics import mean_squared_error, r2_score
+pip list #Pandas 0.24.2 has an issue with fit_scores() method
+pip install pandas==0.23.4
+
+
 
 # set directory
 os.getcwd()
@@ -241,31 +245,56 @@ plt.ylabel('Yes', fontsize=14)
 plt.grid(True)
 plt.show()
 
+# defining cost 
+def cost_function(X, Y, B):
+    m = len(Y)
+    J = np.sum((X.dot(B) - Y) ** 2)/(2 * m)
+    return J
 
+
+def batch_gradient_descent(X, Y, B, alpha, iterations):
+    cost_history = [0] * iterations
+    m = len(Y)
+ 
+    for iteration in range(iterations):
+        #print(iteration)
+        # Hypothesis Values
+        h = X.dot(B)
+        # Difference b/w Hypothesis and Actual Y
+        loss = h - Y
+        # Gradient Calculation
+        gradient = X.T.dot(loss) / m
+        # Changing Values of B using Gradient
+        B = B - alpha * gradient
+        # New Cost Value
+        cost = cost_function(X, Y, B)
+        cost_history[iteration] = cost
+    return B, cost_history
 
 # spliting database
 
-k = int(len(df['Yes']) * -0.2)
-k2 = int(len(df['Yes']) * -0.8)
-test = df.Yes.iloc[k:] #20
+k2 = int(len(df['Yes']) * 0.2) # 20% samples
+k8 = int(len(df['Yes']) * -0.8) # 80% samples
 
-train = df.iloc[k2:] #80
-train = df[k2:].index
-train = x[k2:]
-trainy= y[]
+x_train = x[k8:] #80%
+x_train = np.c_[np.ones(len(x_train),dtype='int64'),x_train]
+y_train = y[k8:]
 
-print(train)
-# defining input and output.    
-x_train = train
-y_train = 
-x_train = np.array(train[['RepYes','DemYes']]).reshape(-1,1)
-y_train = np.array(train['Yes']).reshape(-1,1)
+x_test = x[:k2] #20%
+x_test = np.c_[np.ones(len(x_test),dtype='int64'),x_test]
+y_test = y[:k2]
 
 # fiting LR model.  
 model = LinearRegression()
 model.fit(x_train, y_train)    
  
+# initialize coefficients
+B = np.zeros(x_train.shape[1])
 
+alpha = 0.05
+iter_ = 2000
+
+newB, cost_history = batch_gradient_descent(x_train, y_train, B, alpha, iter_)
 
 # creating MLR object
 model_mlr = linear_model.LinearRegression()
