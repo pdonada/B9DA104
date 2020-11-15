@@ -9,6 +9,8 @@ import os
 from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import IterativeImputer
 from sklearn.preprocessing import Imputer
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.model_selection import KFold
 
 
 # set directory
@@ -19,9 +21,9 @@ os.chdir('C:/github/B9DA104/CA2/impeachment-polls/')
 
 # read file
 data_set = pd.read_csv('impeachment-polls.csv')
-type(data_set)
 
 # inspect data
+type(data_set)
 data_set.head()
 data_set.describe()
 data_set.dtypes
@@ -30,13 +32,13 @@ data_set.info() #count non-null values in the columns
 data_set.isnull().sum(axis=0) #count blanks in the columns
 
 # subset with necessary columns only
-#data_sub = data_set.drop(['Start','End','SampleSize','Category','Include?','Pollster','Sponsor','Pop','tracking','Text','URL','Notes'], axis = 1)
-data_sub = data_set[['Yes','No','Unsure','Ind Sample']]
-data_sub = data_sub.rename(columns={'Ind Sample':'IndSample'})
+data_sub = data_set[['Yes','No','Unsure','Rep Yes', 'Rep No']]
 
-# imput values for NaN
-data_sub.Unsure.fillna(value = 0, inplace = True) #here by zero as it just occurs when there was no real value
-data_sub.IndSample.fillna(data_sub.IndSample.mean(), inplace = True) #here by mean as there should be always value for reference
+# rename columns to same standard
+data_sub = data_sub.rename(columns={'Rep Yes':'RepYes', 'Rep No':'RepNo'})
+
+# imput zeros on NaN values for Unsure
+data_sub.Unsure.fillna(value = 0, inplace = True)
 
 # inspect data
 data_sub.head()
@@ -62,7 +64,6 @@ box1= data_sub.plot(kind='box', subplots=False, layout=(4,3), sharex=False, shar
 # density plot
 dens = data_sub.plot(kind='density', subplots=True, layout=(4,3), sharex=False, sharey=False)
 
-# plot
 # correlation heat map
 corr = data_sub.corr()
 sns.heatmap(corr, 
@@ -77,44 +78,147 @@ for i in ocor_a.flatten():
     i.yaxis.label.set_ha('right')
 
 
-# rescaling
-array=data_sub.values
-x=array[:,:]
-scale=MinMaxScaler(feature_range=(0,2))
-rescaled_data=scale.fit_transform(x)
-np.set_printoptions(precision=2)
-print(rescaled_data[0:5,:])
+# data imputation on RepYes columns using Linear Regression
+# checking correlation between Yes and RepYes to see if can be used for LR
+print('Correlation: ', data_sub['Yes'].corr(data_sub['RepYes']))
 
-# linear regression
-# use only one feature
-x_data = data_sub.No
+# to split training and testing subsests will make a filter to avoid NaN values on RepYes
+df_filter = data_sub[data_sub['RepYes']>=0].copy()
+print(df_filter.shape)
 
-# split the data into training/testing sets
-x_data_train = x[:-20]
-x_data_test = x[-20:]
-
-# split the targets into training/testing sets
-y_data_train = data_sub.No[:-20]
-y_data_test = data_sub.No[-20:]
-
-# create linear regression object
-lin_regres = LinearRegression()
-
-# train the model using the training sets
-lin_regres.fit(x_data_train, y_data_train)
-
-# make predictions using the testing set
-y_data_pred = lin_regres.predict(x_data_test)
-print(y_data_pred)
-
-# The coefficients
-print('Coefficients: \n', regr.coef_)
-# The mean squared error
-print("Mean squared error: %.2f"
-      % mean_squared_error(diabetes_y_test, diabetes_y_pred))
-# Explained variance score: 1 is perfect prediction
-print('Variance score: %.2f' % r2_score(diabetes_y_test, diabetes_y_pred))
+# creating objects to house predictions and real values
+y_pred = []
+y_true = []
 
 
+# using k-fold validation for the model using 10 folds.
+kf = KFold(n_splits=10, random_state = 42)
+for train_index, test_index in kf.split(df_filter):
+    df_test = df_filter.iloc[test_index]
+    df_train = df_filter.iloc[train_index]
+# defining input and output.    
+    x_train = np.array(df_train['Yes']).reshape(-1,1)
+    y_train = np.array(df_train['RepYes']).reshape(-1,1)
+    x_test = np.array(df_test['Yes']).reshape(-1,1)
+    y_test = np.array(df_test['RepYes']).reshape(-1,1)
+# fiting LR model.  
+    model = LinearRegression()
+    model.fit(x_train, y_train)
+# generating/appending prediction values to the objects created before    
+    y_pred.append(model.predict(x_test)[0])
+    y_true.append(y_test[0])  
 
- 
+# checking performance of model with mean square error
+print(len(y_pred))
+print(len(y_true))
+print('Mean Square Error: ', mean_squared_error(y_true, y_pred))
+
+# creating list with NaN values on RepYes to be used in the model
+df_missing = data_sub[data_sub['RepYes'].isnull()].copy()   
+
+# predicting NaN values on RepYes with the model for NaN values
+x_test_lr = np.array(df_missing['Yes']).reshape(-1,1)
+
+x_train_lr = np.array(df_filter['Yes']).reshape(-1,1)
+y_train_lr = np.array(df_filter['RepYes']).reshape(-1,1)
+
+# creating LR object
+model_lr = LinearRegression()
+
+# fiting LR model
+model_lr.fit(x_train_lr, y_train_lr)
+print('Linear regression predictions: ', model_lr.predict(x_test_lr)[0])
+
+# store prediction result in a variable
+pred = model_lr.predict(x_test_lr)
+print(pred)
+
+# crating variable with RepYes values to imput predicted values in NaN psitions
+repyes_vals = data_sub['RepYes'].values
+print(repyes_vals)
+
+# loop to imput values on RepYes NaN with predicted values
+i_value = 0
+for i in range(len(repyes_vals)):
+    if np.isnan(repyes_vals[i]):
+        repyes_vals[i] = pred[i_value]
+        i_value += 1
+
+# copiando values from variable to RepYes column
+data_sub['RepYes'] = repyes_vals           
+
+# plot outputs
+plt.scatter(x_test, y_test,  color='black')
+plt.plot(x_test, pred, color='blue', linewidth=3)
+print(x_test)
+
+
+
+
+##############################################################################
+
+data_set.head()
+print('Correlation: ', data_sub['Yes'].corr(data_sub['RepYes']))
+
+df_filter = data_sub[data_sub['RepYes']>=0].copy()
+print(df_filter.shape)
+y_pred = []
+y_true = []
+
+kf = KFold(n_splits=10, random_state = 42)
+for train_index, test_index in kf.split(df_filter):
+    df_test = df_filter.iloc[test_index]
+    df_train = df_filter.iloc[train_index]
+
+    x_train = np.array(df_train['Yes']).reshape(-1,1)
+    y_train = np.array(df_train['RepYes']).reshape(-1,1)
+    x_test = np.array(df_test['Yes']).reshape(-1,1)
+    y_test = np.array(df_test['RepYes']).reshape(-1,1)
+    
+    model = LinearRegression()
+    model.fit(x_train, y_train)
+    
+    y_pred.append(model.predict(x_test)[0])
+    y_true.append(y_test[0])    
+    
+print(len(y_pred))
+print(len(y_true))
+print('Mean Square Error: ', mean_squared_error(y_true, y_pred))
+
+
+df_missing = data_sub[data_sub['RepYes'].isnull()].copy()   
+print(df_missing) 
+print(len(df_missing))
+
+x_test_lr = np.array(df_missing['Yes']).reshape(-1,1)
+
+x_train_lr = np.array(df_filter['Yes']).reshape(-1,1)
+y_train_lr = np.array(df_filter['RepYes']).reshape(-1,1)
+
+
+
+model_lr = LinearRegression()
+model_lr.fit(x_train_lr, y_train_lr)
+print('Linear regression predictions: ', model_lr.predict(x_test_lr)[0])
+pred = model_lr.predict(x_test_lr)
+print(pred)
+
+
+data_sub.RepYes.fillna(value = 0, inplace = True)
+
+print(data_sub['RepYes'])
+print(data_sub['RepYes'].isnull())
+
+repyes_vals = data_sub['RepYes'].values
+print(repyes_vals)
+
+i_value = 0
+for i in range(len(repyes_vals)):
+    if np.isnan(repyes_vals[i]):
+        repyes_vals[i] = pred[i_value]
+        i_value += 1
+        
+print(repyes_vals)
+
+data_sub['RepYes'] = repyes_vals        
+        
