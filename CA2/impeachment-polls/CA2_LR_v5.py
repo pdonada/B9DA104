@@ -292,7 +292,12 @@ dfk = pd.concat([y_test, pred_df], axis=1)
 
 error = dfk['Yes'] - dfk['Predict_Yes']
 
-# plot outputs
-
-  
+# plot error
+plt.figure(figsize = (20,10))
+plt.scatter(y_test,error)
+plt.axhline(0.05)
+plt.axhline(-0.05)
+plt.xlabel('y_test')
+plt.ylabel('error')
+plt.show()
 
