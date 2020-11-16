@@ -1,17 +1,18 @@
 import os
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 import seaborn as sns; sns.set(style="ticks", color_codes=True)
-from sklearn.naive_bayes import GaussianNB
-from sklearn.model_selection import train_test_split
+#import matplotlib.pyplot as plt
 
-from sklearn import linear_model
-from sklearn.linear_model import LinearRegression
-from sklearn.model_selection import KFold
-from sklearn.metrics import mean_squared_error, r2_score
+
+#from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+#from sklearn.model_selection import train_test_split
+#from sklearn import linear_model
+#from sklearn.linear_model import LinearRegression
+#from sklearn.model_selection import KFold
+#from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.naive_bayes import GaussianNB
 from sklearn import metrics
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import chi2
 
@@ -82,7 +83,9 @@ obj_df['q0028_cat'] = obj_df['q0028'].cat.codes
 obj_df['q0029_cat'] = obj_df['q0029'].cat.codes
 
 # creating new df excluding original columns
-df_cat = obj_df.drop([columns_or], axis=1)
+df_cat = obj_df.drop(['q0001','q0002','q0005','q0008_0001','q0008_0002','q0008_0003','q0008_0004','q0008_0005'
+              ,'q0008_0006','q0008_0007','q0008_0008','q0008_0009','q0008_0010','q0008_0011','q0008_0012'
+              ,'q0017','q0018','q0022','q0024','q0026','age3','q0028','q0029'], axis=1)
 
 
 # Gaussian Naive Bayes Classification
