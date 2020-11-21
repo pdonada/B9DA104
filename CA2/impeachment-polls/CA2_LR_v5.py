@@ -4,18 +4,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns; sns.set(style="ticks", color_codes=True)
 
-from sklearn import linear_model
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import KFold
 from sklearn.metrics import mean_squared_error, r2_score
 
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-
-
 #pip list #Pandas 0.24.2 has an issue with fit_scores() method
 #pip install pandas==0.23.4
-
-
 
 # set directory
 os.getcwd()
@@ -56,14 +50,14 @@ data_sub.corr()
 data_sub.skew()
 
 # histogram
-hist = data_sub.hist(bins=20)
+hist = data_sub.hist(bins=20, figsize=(20,10))
 
 # box plot
-box = data_sub.plot(kind='box', subplots=True, layout=(4,3),sharex=False,sharey=False)
-box1= data_sub.plot(kind='box', subplots=False, layout=(4,3), sharex=False, sharey=False)
+box = data_sub.plot(kind='box', subplots=True, layout=(3,2),sharex=False,sharey=False, figsize=(20,10))
+box1= data_sub.plot(kind='box', subplots=False, layout=(2,3), sharex=False, sharey=False)
 
 # density plot
-dens = data_sub.plot(kind='density', subplots=True, layout=(4,3), sharex=False, sharey=False)
+dens = data_sub.plot(kind='density', subplots=True, layout=(3,2), sharex=False, sharey=False,figsize=(20,10))
 
 # correlation heat map
 corr = data_sub.corr()
@@ -120,6 +114,7 @@ df_missing = data_sub[data_sub['RepYes'].isnull()].copy()
 
 # predicting NaN values on RepYes with the model for NaN values
 x_test_lr = np.array(df_missing['Yes']).reshape(-1,1)
+y_test_lr = np.array(df_missing['RepYes']).reshape(-1,1)
 
 x_train_lr = np.array(df_filter['Yes']).reshape(-1,1)
 y_train_lr = np.array(df_filter['RepYes']).reshape(-1,1)
@@ -149,9 +144,13 @@ for i in range(len(repyes_vals)):
 # copiando values from variable to RepYes column
 data_sub['RepYes'] = repyes_vals
 
+# the coefficients
+print('Coefficients: \n', model_lr.coef_)
+
+
 # plot outputs
-plt.scatter(x_test, y_test,  color='black')
-plt.plot(x_test, pred, color='blue', linewidth=3)
+plt.scatter(x_test_lr, y_test_lr,  color='black') #scatter will not work because the 'y' was NaN  
+plt.plot(x_test_lr, pred, color='blue', linewidth=3)
 
 ################################################################################
 # data imputation on DemYes columns using Linear Regression
@@ -194,6 +193,7 @@ df_missing = data_sub[data_sub['DemYes'].isnull()].copy()
 
 # predicting NaN values on RepYes with the model for NaN values
 x_test_lr = np.array(df_missing['Yes']).reshape(-1,1)
+y_test_lr = np.array(df_missing['DemYes']).reshape(-1,1)
 
 x_train_lr = np.array(df_filter['Yes']).reshape(-1,1)
 y_train_lr = np.array(df_filter['DemYes']).reshape(-1,1)
@@ -224,8 +224,8 @@ for i in range(len(repyes_vals)):
 data_sub['DemYes'] = repyes_vals           
 
 # plot outputs
-plt.scatter(x_test, y_test,  color='black')
-plt.plot(x_test, pred, color='blue', linewidth=3)
+plt.scatter(x_test_lr, y_test_lr,  color='black')
+plt.plot(x_test_lr, pred, color='blue', linewidth=3)
 
 ################################################################################
 # Multivariate Linear Regression to predict Yes
@@ -300,4 +300,5 @@ plt.axhline(-0.05)
 plt.xlabel('y_test')
 plt.ylabel('error')
 plt.show()
+
 
